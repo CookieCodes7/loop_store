@@ -1,0 +1,44 @@
+import {loadCart} from './lib/cart';
+import {useState,useEffect,Fragment} from 'react';
+import {h} from './lib/html';
+import {PRODUCTS} from './data/products';
+import {Navbar} from './components/Navbar';
+import {LEGAL,Legal} from './pages/Legal';
+import {NotFound} from './pages/NotFound';
+import {Footer} from './components/Footer';
+import {SearchOverlay} from './components/SearchOverlay';
+import {Shop} from './pages/Shop';
+import {Collections} from './pages/Collections';
+import {About} from './pages/About';
+import {Contact} from './pages/Contact';
+import {Checkout} from './pages/Checkout';
+import {OrderDone} from './pages/OrderDone';
+import {CartDrawer} from './components/CartDrawer';
+import {ProductPage} from './pages/Product';
+import {DESC,setMeta} from './lib/seo';
+import {Home} from './pages/Home';
+
+export function App(){
+  const [cart,setCart]=useState(loadCart),[open,setOpen]=useState(false),[search,setSearch]=useState(false),[hash,setHash]=useState(location.hash);
+  const [path]=hash.replace(/^#/,'').split('?'),seg=path.split('/').filter(Boolean),r=seg[0]||'home',prod=r==='product'?PRODUCTS.find(p=>p.slug===seg[1]):null;
+  useEffect(()=>{const f=()=>setHash(location.hash),k=e=>{if(e.key==='Escape'){setOpen(false);setSearch(false)}};addEventListener('hashchange',f);addEventListener('keydown',k);return()=>{removeEventListener('hashchange',f);removeEventListener('keydown',k)}},[]);
+  useEffect(()=>{try{localStorage.setItem('loop_cart',JSON.stringify(cart))}catch{}},[cart]);
+  useEffect(()=>{document.body.style.overflow=open||search?'hidden':''},[open,search]);
+  useEffect(()=>{scrollTo(0,0);setOpen(false);setSearch(false);setMeta(prod?prod.name+' — LOOP':r==='home'?'LOOP — Minimal Accessories for Everyday Style':(LEGAL[r]?LEGAL[r][0]:r[0].toUpperCase()+r.slice(1))+' — LOOP',prod?prod.desc:DESC[r]||DESC.home)},[path]);
+  const add=(p,q=1,v=p.variants[0],show=true)=>{if(p.stock<1)return;setCart(c=>{const have=c.filter(x=>x.id===p.id).reduce((a,x)=>a+x.qty,0),n=Math.min(q,p.stock-have);if(n<1)return c;const i=c.findIndex(x=>x.id===p.id&&x.v===v);return i>-1?c.map((x,j)=>j===i?{...x,qty:x.qty+n}:x):[...c,{id:p.id,v,qty:n}]});if(show)setOpen(true)};
+  const setQty=(c,n)=>setCart(l=>l.flatMap(x=>x!==c?[x]:n>0?[{...x,qty:Math.min(n,PRODUCTS.find(p=>p.id===x.id).stock)}]:[]));
+  const subtotal=cart.reduce((a,c)=>a+PRODUCTS.find(p=>p.id===c.id).price*c.qty,0);
+  const done=o=>{try{sessionStorage.setItem('loop_order',JSON.stringify(o))}catch{}setCart([]);location.hash='#/order'};
+  let page;
+  if(r==='home')page=h`<${Home} add=${add}/>`;
+  else if(r==='shop')page=h`<${Shop} cat=${seg[1]} add=${add}/>`;
+  else if(r==='collections')page=h`<${Collections}/>`;
+  else if(r==='product')page=prod?h`<${ProductPage} key=${prod.id} p=${prod} add=${add}/>`:h`<${NotFound} msg="We couldn't find that product."/>`;
+  else if(r==='about')page=h`<${About}/>`;
+  else if(r==='contact')page=h`<${Contact}/>`;
+  else if(r==='checkout')page=h`<${Checkout} cart=${cart} subtotal=${subtotal} done=${done}/>`;
+  else if(r==='order')page=h`<${OrderDone}/>`;
+  else if(LEGAL[r])page=h`<${Legal} k=${r}/>`;
+  else page=h`<${NotFound}/>`;
+  return h`<${Fragment}><${Navbar} count=${cart.reduce((a,c)=>a+c.qty,0)} openCart=${()=>setOpen(true)} openSearch=${()=>setSearch(true)}/><${Fragment} key=${path}>${page}</${Fragment}><${Footer} home=${r==='home'}/><${CartDrawer} open=${open} close=${()=>setOpen(false)} cart=${cart} setQty=${setQty} subtotal=${subtotal} clear=${()=>setCart([])}/><${SearchOverlay} open=${search} close=${()=>setSearch(false)}/></${Fragment}>`;
+}

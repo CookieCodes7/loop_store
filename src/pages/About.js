@@ -1,0 +1,4 @@
+import {h} from '../lib/html';
+import {Reveal} from '../components/Reveal';
+
+export const About=()=>h`<main className="page pt-32"><section className="max-w-[1500px] mx-auto px-5 md:px-10 pb-24 md:pb-40"><p className="eyebrow mb-6">About LOOP</p><h1 className="h1 text-[clamp(2.6rem,8.5vw,8rem)] max-w-[14ch]">Small details. Big difference.</h1><div className="mt-16 grid md:grid-cols-3 gap-10 border-t border-[var(--line)] pt-10">${[['Simple','Every piece is reduced to what matters. No noise, no excess.'],['Intentional','Considered proportions and honest materials, finished to last.'],['Yours','Wear one, stack several. LOOP is a quiet way to say who you are.']].map(([t,d])=>h`<${Reveal} key=${t}><h2 className="h1 text-2xl">${t}</h2><p className="text-[var(--mut)] mt-3 max-w-[30ch]">${d}</p></${Reveal}>`)}</div><a href="#/shop" className="btn btn-solid mt-16">Shop the collection</a></section></main>`;
